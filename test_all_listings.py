@@ -1,27 +1,49 @@
-import requests
-from bs4 import BeautifulSoup
 import json
+import time
+import random
+import requests
 import pandas as pd
 
-cik = '0000004977'
+comp_list = pd.read_csv("C:/Users/Marina/Documents/PhD/Data/Financials/000_desc.csv")
+comp_list['CIK'] = comp_list['CIK'].apply(lambda x: str(x).zfill(10))
 
-url = "https://data.sec.gov/submissions/CIK"+cik+".json"
+# cik = '0000004977'
 
-headers = { # change the name of user
-    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.110 Safari/537.36"
-}
+for cik in comp_list['CIK']:
 
-response = requests.get(url, headers=headers)
-data = json.loads(response.text)
+    comp_name = comp_list.loc[comp_list['CIK'] == cik, 'Company name'].values[0]
+    comp_ticker = comp_list.loc[comp_list['CIK'] == cik, 'Ticker'].values[0]
 
-data_listings = pd.DataFrame()
-for c in data['filings']['recent'].keys():
-    data_listings[c] = data['filings']['recent'][c]
+    url = "https://data.sec.gov/submissions/CIK"+cik+".json"
 
-if 'files' in data['filings']:
-    older_listings = data['filings']['files']
+    headers = {
+        "User-Agent": "National Technical University of Athens, PhD Researcher msolov@fsu.gr"
+    }
 
-data_10q = data_df.loc[data_df['form']=='10-Q', :].copy()
+    time.sleep(random.randint(1, 3))
+    response = requests.get(url, headers=headers)
+    data = json.loads(response.text)
 
+    data_filings = pd.DataFrame()
 
+    for c in data['filings']['recent'].keys():
+        data_filings[c] = data['filings']['recent'][c]
 
+    if bool(data['filings']['files']):
+        older_filings = data['filings']['files']
+
+        ulr_older = "https://data.sec.gov/submissions/"+older_filings[0]['name']
+
+        response = requests.get(ulr_older, headers=headers)
+        data_old = json.loads(response.text)
+
+        data_filings_old = pd.DataFrame()
+
+        for c in data_old.keys():
+            data_filings_old[c] = data_old[c]
+        data_filings = pd.concat((data_filings, data_filings_old))
+        print(comp_ticker, comp_name, cik, 'completed')
+
+    path_filings = str('C:/Users/Marina/Documents/PhD/Data/Financials/'+comp_ticker+'_filings.csv')
+    # noinspection PyTypeChecker
+    data_filings.to_csv(path_filings, index=False)
