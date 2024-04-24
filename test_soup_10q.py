@@ -73,16 +73,16 @@ for cik in comp_list['CIK']:
         hop = [s.strip().replace('i.', 'i') for s in hop]
 
         # Extract quarter
-        date_to_extract = ' '.join(hop[0:15]).lower()
+        date_to_extract = ' '.join(hop[0:50]).lower()
         q_to_extract = ''
 
-        if 'march' in date_to_extract:
+        if 'ended march' in date_to_extract:
             q_to_extract = 'Q1'
-        elif 'june' in date_to_extract:
+        elif 'ended june' in date_to_extract:
             q_to_extract = 'Q2'
-        elif 'september' in date_to_extract:
+        elif 'ended september' in date_to_extract:
             q_to_extract = 'Q3'
-        elif 'december' in date_to_extract:
+        elif 'ended december' in date_to_extract:
             q_to_extract = 'Q4'
 
         years_extracted = re.findall(r'\b\d{4}\b', date_to_extract)

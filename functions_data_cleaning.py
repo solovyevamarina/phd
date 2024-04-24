@@ -37,7 +37,7 @@ def find_index_item(data, list_of_possible):
     return item_index
 
 
-def clean_table (separated_table, column_name):
+def clean_table(separated_table, column_name):
     text_data = [s.strip().replace('\xa0', ' ') for s in separated_table if
                  s.strip() and s.strip() != '\xa0' and s.strip() not in ['$', '(1)', '—']]
     text_data = [s.strip().replace('(1)', '') for s in text_data]
