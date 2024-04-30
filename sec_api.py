@@ -35,7 +35,7 @@ for filing in list_10q:
         "User-Agent": "National Technical University of Athens, PhD Researcher msolov@fsu.gr"
     }
 
-    time.sleep(random.randint(1, 3))
+    time.sleep(random.randint(1, 2))
     response = requests.get(url, headers=headers)
 
     soup = BeautifulSoup(response.text, "html.parser")
@@ -43,40 +43,87 @@ for filing in list_10q:
 
     tables = soup.find_all('table')
 
-    dataframes_dict = {}
+    tables_dict = {}
 
-    for i, table in enumerate(tables[0:10]):
+    for i, table in enumerate(tables[0:25]):
         rows = table.find_all('tr')
         table_data = []
         for row in rows:
             cells = row.find_all(['th', 'td'])
             row_data = []
             for cell in cells:
-                cell_text = cell.get_text(strip=True)
-                if cell_text and cell_text != '$':
+                cell_text = cell.get_text(strip=True).replace('\xa0', ' ')
+                cell_text = (cell_text.replace('$', '')
+                             .replace('(1)', '').replace('(2)', '').replace('(3)', '')
+                             .replace(' (1)', '').replace(' (2)', '').replace(' (3)', ''))
+                if cell_text and cell_text != '(' and cell_text != ')':
                     row_data.append(cell_text)
             if row_data:
                 table_data.append(row_data)
 
         df = pd.DataFrame(table_data)
-        dataframes_dict[f"table_{i + 1}"] = df
+        tables_dict[f"table_{i + 1}"] = df
 
-    # Access each DataFrame using the keys in the dictionary
-    # for key, df in dataframes_dict.items():
-    #     print(f"DataFrame {key}:")
-    #     print(df)
+    # Table 1 - Consolidated Statements of Earnings
 
-    target_table_key = None
+    table_1_key = None
 
-    for key, df in dataframes_dict.items():
+    for key, df in tables_dict.items():
         if 'Total investments and cash' in df.values:
-            target_table_key = key
+            table_1_key = key
             break
 
-    if target_table_key:
-        target_table = dataframes_dict[target_table_key]
-        # Process target_table as needed
-        print(f"Target table found in DataFrame {target_table_key}:")
+    if table_1_key:
+        target_table = tables_dict[table_1_key].copy()
         print(target_table)
+        target_table = (
+            target_table.rename(columns={0: 'Name'}))
+
+        assets_index = target_table[target_table['Name'] == 'Assets:'].index[0]
+        target_table_assets = target_table.iloc[assets_index:]
+
+        dates_str = target_table.iloc[:assets_index].to_string(index=False)
+
+        month_names = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October',
+                       'November', 'December']
+        for month in month_names:
+            dates_str = dates_str.replace(month, f'|{month}')
+
+        dates_list = dates_str.split('|')
+
+        dates_list = [date.strip() for date in dates_list if date.strip()]
+        dates_list_filtered = [date for date in dates_list if any(month in date for month in month_names)]
+        dates_list_filtered = [date.replace('None', '').replace('\n', '') for date in dates_list_filtered]
+        dates_list_filtered = [re.sub(r'\s+', ' ', date.replace('(In millions)', '')).strip() for date in
+                               dates_list_filtered]
+
+        target_table.columns = ['Name'] + dates_list_filtered
+
+        for col_index in range(1, len(target_table.columns)):
+            non_empty_index = target_table[target_table.columns[col_index]].first_valid_index()
+            if non_empty_index is not None:
+                new_col_name = target_table.iloc[non_empty_index, col_index]
+                target_table.rename(columns={target_table.columns[col_index]: new_col_name}, inplace=True)
+
+        target_table = target_table.iloc[1:, ].reset_index(drop=True)
+
+        target_table['Name'] = target_table['Name'].str.replace('-', ' ')
+        target_table['Name'] = target_table['Name'].apply(lambda x: x.split('In thousands:')[0].strip())
+        target_table['Name'] = target_table['Name'].apply(lambda x: x.split('sale,')[0].strip())
+        target_table['Name'] = target_table['Name'].apply(lambda x: x.split(', net')[0].strip())
+        target_table['Name'] = target_table['Name'].apply(lambda x: x.split('(includes')[0].strip())
+        target_table['Name'] = target_table['Name'].apply(lambda x: x.split('(c')[0].strip())
+        target_table['Name'] = target_table['Name'].apply(lambda x: x.split('(a')[0].strip())
+        target_table['Name'] = target_table['Name'].apply(lambda x: x.split('(f')[0].strip())
+
+        if not comp_t1.empty:
+            target_table.drop_duplicates(subset='Name', inplace=True)
+            comp_t1.drop_duplicates(subset='Name', inplace=True)
+            comp_t1 = pd.merge(comp_t1, target_table, on='Name', how='outer', suffixes=('', '_new'))
+            comp_t1 = comp_t1[[col for col in comp_t1.columns if not col.endswith('_new')]]
+        else:
+            target_table.drop_duplicates(subset='Name', inplace=True)
+            comp_t1.drop_duplicates(subset='Name', inplace=True)
+            comp_t1 = target_table.copy()
     else:
         print("No table with 'Total investments and cash' found.")
