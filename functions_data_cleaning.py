@@ -26,6 +26,32 @@ def find_index(data, list_of_start, list_of_end):
     return earliest_start_index, earliest_end_index
 
 
+def find_index_second(data, list_of_start, list_of_end):
+    start_index = None
+    end_index = None
+
+    start_count = 0
+    end_count = 0
+
+    # Iterate through the data to find the second occurrence of items in list_of_start
+    for i, item in enumerate(data):
+        if any(t in item for t in list_of_start):
+            start_count += 1
+            if start_count == 2:  # Look for the second occurrence
+                start_index = i
+                break  # Stop searching after finding the second occurrence
+
+    # If the second start index was found, continue to find the second occurrence in list_of_end
+    if start_index is not None:
+        for i, item in enumerate(data[start_index:], start=start_index):
+            if any(t in item for t in list_of_end):
+                end_count += 1
+                if end_count == 2:  # Look for the second occurrence
+                    end_index = i
+                    break  # Stop searching after finding the second occurrence
+
+    return start_index, end_index
+
 def find_index_item(data, list_of_possible):
     item_index = None
 
