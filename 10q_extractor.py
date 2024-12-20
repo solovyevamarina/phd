@@ -30,6 +30,8 @@ t3_e = ['see accompanying notes to condensed consolidated financial statements (
         'notes to the consolidated financial statements (unaudited)     ']
 t3_i = ['cash flows from operating activities', 'cash flows from operating activities:']
 
+cik = '0000320193'
+
 for cik in comp_list['CIK']:
 
     comp_name = comp_list.loc[comp_list['CIK'] == cik, 'Company name'].values[0]

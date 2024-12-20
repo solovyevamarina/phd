@@ -7,7 +7,7 @@ import pandas as pd
 comp_list = pd.read_csv("files/000_desc.csv")
 comp_list['CIK'] = comp_list['CIK'].apply(lambda x: str(x).zfill(10))
 
-# cik = '0000004977'
+cik = '0000320193'
 
 for cik in comp_list['CIK']:
 
@@ -44,6 +44,6 @@ for cik in comp_list['CIK']:
         data_filings = pd.concat((data_filings, data_filings_old))
         print(comp_ticker, comp_name, cik, 'completed')
 
-    path_filings = str('C:/Users/Marina/Documents/PhD/Data/Financials/'+comp_ticker+'_filings.csv')
+    path_filings = str('C:/Users/Marina/Documents/PhD/'+comp_ticker+'_filings.csv')
     # noinspection PyTypeChecker
     data_filings.to_csv(path_filings, index=False)
